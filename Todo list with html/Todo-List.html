@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep-Task-Todo-App</title>
+    <meta name="theme-color" content="#4F46E5" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100">
+    <div id="root"></div>
+
+    <!-- React + Babel -->
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- PDF libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- ================= REACT APP ================= -->
+    <script type="text/babel">
+      const Navbar = () => (
+        <nav className="fixed top-0 left-0 w-full flex justify-between px-8 bg-indigo-900 text-white items-center h-16 shadow-md z-50">
+          <div className="logo">
+            <span className="font-bold text-2xl">Deep-Task</span>
+          </div>
+          <ul className="flex gap-8">
+            <li className="cursor-pointer hover:font-bold transition-all">
+              Home
+            </li>
+            <li className="cursor-pointer hover:font-bold transition-all">
+              Your Tasks
+            </li>
+          </ul>
+        </nav>
+      );
+
+      const { jsPDF } = window.jspdf;
+
+      function App() {
+        const [todo, setTodo] = React.useState("");
+        const [todos, setTodos] = React.useState([]);
+        const [showFinished, setShowFinished] = React.useState(true);
+        const inputRef = React.useRef(null);
+        const [deferredPrompt, setDeferredPrompt] = React.useState(null);
+        const [installVisible, setInstallVisible] = React.useState(false);
+
+        React.useEffect(() => {
+          try {
+            const todoString = localStorage.getItem("todos");
+            if (todoString) {
+              setTodos(JSON.parse(todoString));
+            } else {
+              const exampleTodo = [
+                {
+                  id: "1",
+                  todo: "Welcome to Deep-Task! Add your tasks here.",
+                  isCompleted: false,
+                },
+              ];
+              setTodos(exampleTodo);
+              localStorage.setItem("todos", JSON.stringify(exampleTodo));
+            }
+          } catch (err) {
+            console.warn("LocalStorage access failed:", err);
+          }
+
+          // Listen for PWA install prompt
+          window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setInstallVisible(true);
+          });
+        }, []);
+
+        const saveToLS = (newTodos) => {
+          try {
+            localStorage.setItem("todos", JSON.stringify(newTodos));
+          } catch (err) {
+            console.warn("LocalStorage save failed:", err);
+          }
+        };
+
+        const handleAdd = () => {
+          if (!todo.trim()) return;
+          const newTodos = [
+            ...todos,
+            { id: Date.now().toString(), todo, isCompleted: false },
+          ];
+          setTodos(newTodos);
+          setTodo("");
+          saveToLS(newTodos);
+          inputRef.current?.focus();
+        };
+
+        const handleEdit = (id) => {
+          const found = todos.find((t) => t.id === id);
+          if (!found) return;
+          setTodo(found.todo);
+          const newTodos = todos.filter((t) => t.id !== id);
+          setTodos(newTodos);
+          saveToLS(newTodos);
+          inputRef.current?.focus();
+        };
+
+        const handleDelete = (id) => {
+          const newTodos = todos.filter((t) => t.id !== id);
+          setTodos(newTodos);
+          saveToLS(newTodos);
+        };
+
+        const handleDeleteAll = () => {
+          setTodos([]);
+          saveToLS([]);
+        };
+
+        const handleCheckbox = (id) => {
+          const newTodos = todos.map((t) =>
+            t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
+          );
+          setTodos(newTodos);
+          saveToLS(newTodos);
+        };
+
+        const toggleFinished = () => setShowFinished(!showFinished);
+
+        const handleDownloadPDF = () => {
+          const doc = new jsPDF();
+          doc.text("Your Todos", 14, 16);
+          const tableRows = todos.map((item, idx) => [
+            idx + 1,
+            item.todo,
+            item.isCompleted ? "Yes" : "No",
+          ]);
+          doc.autoTable({
+            head: [["#", "Todo", "Completed"]],
+            body: tableRows,
+            startY: 20,
+          });
+          doc.save("todos.pdf");
+        };
+
+        const handleInstall = async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log("User choice:", outcome);
+          setDeferredPrompt(null);
+          setInstallVisible(false);
+        };
+
+        return (
+          <>
+            <Navbar />
+            {installVisible && (
+              <div className="fixed bottom-4 right-4">
+                <button
+                  onClick={handleInstall}
+                  className="bg-indigo-700 hover:bg-indigo-900 px-5 py-2 rounded-lg text-white shadow"
+                >
+                  📲 Install App
+                </button>
+              </div>
+            )}
+            <div className="mx-3 md:container md:mx-auto mt-20 rounded-xl p-6 bg-violet-100 min-h-[80vh] md:w-[60%] shadow-lg">
+              <h1 className="font-bold text-center text-3xl text-violet-900 mb-6">
+                Deep-Task - Manage your todos at one place
+              </h1>
+
+              <div className="addTodo my-5 flex flex-col gap-4">
+                <h2 className="text-2xl font-bold text-gray-800">Add a Todo</h2>
+                <div className="flex">
+                  <input
+                    ref={inputRef}
+                    onChange={(e) => setTodo(e.target.value)}
+                    value={todo}
+                    type="text"
+                    placeholder="Write your task..."
+                    className="w-full rounded-full px-5 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-600"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && todo.length > 0) handleAdd();
+                    }}
+                  />
+                  <button
+                    onClick={handleAdd}
+                    disabled={todo.length <= 0}
+                    className="bg-violet-700 mx-2 rounded-full hover:bg-violet-900 disabled:bg-gray-400 px-6 py-2 text-sm font-bold text-white shadow"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap justify-center items-center gap-4 my-6">
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={todos.length === 0}
+                  className="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-5 rounded-full disabled:bg-gray-400 shadow"
+                >
+                  Delete All Todos
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={todos.length === 0}
+                  className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-5 rounded-full disabled:bg-gray-400 shadow"
+                >
+                  Download as PDF
+                </button>
+                <div className="flex items-center">
+                  <input
+                    id="show"
+                    onChange={toggleFinished}
+                    type="checkbox"
+                    checked={showFinished}
+                    className="w-5 h-5 accent-violet-700"
+                  />
+                  <label
+                    className="ml-2 text-gray-700 font-medium"
+                    htmlFor="show"
+                  >
+                    Show Finished
+                  </label>
+                </div>
+              </div>
+
+              <div className="h-[1px] bg-black opacity-15 w-[90%] mx-auto my-4"></div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Your Todos
+              </h2>
+
+              <div className="todos mt-4">
+                {todos.length === 0 && (
+                  <div className="m-5 text-gray-600 italic">
+                    No Todos to display
+                  </div>
+                )}
+                {todos.map(
+                  (item) =>
+                    (showFinished || !item.isCompleted) && (
+                      <div
+                        key={item.id}
+                        className={`todo flex justify-between p-4 mb-3 rounded-xl shadow-md ${
+                          item.isCompleted ? "bg-green-100" : "bg-white"
+                        }`}
+                      >
+                        <div className="flex gap-3 flex-1 min-w-0 items-start">
+                          <input
+                            type="checkbox"
+                            checked={item.isCompleted}
+                            onChange={() => handleCheckbox(item.id)}
+                            className="w-5 h-5 accent-violet-700 cursor-pointer flex-shrink-0 mt-1"
+                          />
+                          <div
+                            className={`text-lg break-words break-all whitespace-pre-wrap ${
+                              item.isCompleted
+                                ? "line-through text-gray-500"
+                                : "text-gray-800"
+                            }`}
+                          >
+                            {item.todo}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0 self-start">
+                          <button
+                            onClick={() => handleEdit(item.id)}
+                            className="bg-violet-700 hover:bg-violet-900 px-3 py-1 rounded-lg text-white text-sm font-semibold shadow"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="bg-red-600 hover:bg-red-800 px-3 py-1 rounded-lg text-white text-sm font-semibold shadow"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    )
+                )}
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+
+    <script>
+      const manifestData = {
+        name: "Deep-Task Todo App",
+        short_name: "Deep-Task",
+        start_url: ".",
+        display: "standalone",
+        background_color: "#4F46E5",
+        theme_color: "#4F46E5",
+        icons: [
+          {
+            src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABYq6U1AAAAFklEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAB8AAGQAwxoAAUAAAAASUVORK5CYII=",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABYq6U1AAAAFklEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAB8AAGQAwxoAAUAAAAASUVORK5CYII=",
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ],
+      };
+
+      const manifestBlob = new Blob([JSON.stringify(manifestData)], {
+        type: "application/json",
+      });
+      const manifestURL = URL.createObjectURL(manifestBlob);
+
+      const link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = manifestURL;
+      document.head.appendChild(link);
+    </script>
+    <script>
+      // sw.js
+      const CACHE_NAME = "deep-task-cache-v1";
+      const urlsToCache = ["./"];
+      self.addEventListener("install", (e) =>
+        e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(urlsToCache)))
+      );
+      self.addEventListener("activate", (e) =>
+        e.waitUntil(
+          caches
+            .keys()
+            .then((names) =>
+              Promise.all(
+                names.map((n) => (n !== CACHE_NAME ? caches.delete(n) : null))
+              )
+            )
+        )
+      );
+      self.addEventListener("fetch", (e) =>
+        e.respondWith(
+          caches.match(e.request).then((r) => r || fetch(e.request))
+        )
+      );
+
+      const swCode = `
+    const CACHE_NAME = "${CACHE_NAME}";
+    const urlsToCache = ${JSON.stringify(urlsToCache)};
+    self.addEventListener("install", e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache))));
+    self.addEventListener("activate", e => e.waitUntil(caches.keys().then(names => Promise.all(names.map(n => n!==CACHE_NAME ? caches.delete(n) : null)))));
+    self.addEventListener("fetch", e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+  `;
+
+      const swBlob = new Blob([swCode], { type: "application/javascript" });
+      const swURL = URL.createObjectURL(swBlob);
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("sw.js")
+            .then((reg) => console.log("SW registered!", reg))
+            .catch((err) => console.log("SW registration failed:", err));
+        });
+      }
+    </script>
+  </body>
+</html>

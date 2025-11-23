@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<!--
+  Single-file React Todo App with TailwindCSS and jsPDF.
+  This file contains everything: HTML shell, CDN imports, and the full React+JSX app.
+  Extensive inline comments explain each line / block.
+-->
+<html lang="en">
+<head>
+  <!-- Document metadata -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iTask - Todo App (single file)</title>
+
+  <!-- TailwindCSS CDN: provides utility classes used throughout the app.
+       Using the CDN is fine for a quick demo. For production you'd compile Tailwind into CSS. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Root element where the React app will be mounted -->
+  <div id="root"></div>
+
+  <!-- React and ReactDOM (UMD builds via CDN) -->
+  <!-- These allow us to use React in the browser without a bundler for demo purposes. -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Babel standalone (compiles JSX in the browser) -->
+  <!-- Not suitable for production but perfect for single-file demos. -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- jsPDF and autoTable (for PDF generation) -->
+  <!-- jsPDF: create PDF files in browser -->
+  <!-- autoTable: plugin that helps create tables inside PDFs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- All application JS/JSX inside a single <script type="text/babel"> block -->
+  <script type="text/babel">
+    // ===== Navbar component =====
+    // A small, fixed top navigation bar.
+    // Note: this is a functional component returning JSX.
+    const Navbar = () => (
+      // JSX return for the nav bar.
+      // We use Tailwind utility classes here for layout & styling.
+      <nav
+        className="
+          fixed            /* position fixed so navbar remains at top while scrolling */
+          top-0 left-0     /* pin to top-left corner */
+          w-full           /* full width */
+          flex             /* horizontal layout */
+          justify-between  /* push left and right content apart */
+          px-8             /* horizontal padding */
+          bg-indigo-900    /* background color */
+          text-white       /* text color */
+          items-center     /* vertically center items */
+          h-16             /* navbar height */
+          shadow-md        /* subtle shadow under navbar */
+          z-50             /* high z-index so it stays on top */
+        "
+      >
+        {/* left side: logo/title */}
+        <div className="logo">
+          {/* The visible app name/logo text */}
+          <span className="font-bold text-2xl">iTask</span>
+        </div>
+
+        {/* right side: simple nav items (visual only for now) */}
+        <ul className="flex gap-8">
+          <li className="cursor-pointer hover:font-bold transition-all">Home</li>
+          <li className="cursor-pointer hover:font-bold transition-all">Your Tasks</li>
+        </ul>
+      </nav>
+    );
+
+    // ===== Access jsPDF from the UMD bundle exposed on window.jspdf =====
+    // We destructure jsPDF from the window.jspdf namespace so we can call `new jsPDF()`.
+    const { jsPDF } = window.jspdf;
+
+    // ===== App component (main application) =====
+    function App() {
+      // --- React state hooks ---
+      // `todo` stores current input (string typed by user).
+      const [todo, setTodo] = React.useState("");
+
+      // `todos` stores list of todo objects: { id, todo, isCompleted }
+      const [todos, setTodos] = React.useState([]);
+
+      // `showFinished` controls whether completed todos are visible.
+      const [showFinished, setShowFinished] = React.useState(true);
+
+      // `inputRef` holds a reference to the input element (so we can focus it programmatically).
+      const inputRef = React.useRef(null);
+
+      // --- Load saved todos from localStorage on first render ---
+      React.useEffect(() => {
+        // Read the "todos" key from localStorage (string or null)
+        let todoString = localStorage.getItem("todos");
+        if (todoString) {
+          // If we found a saved value, parse it back into an array and set it to state.
+          setTodos(JSON.parse(todoString));
+        }
+        // Empty dependency array -> this runs only once when component mounts.
+      }, []);
+
+      // --- Helper: persist todos array to localStorage (stringify first) ---
+      const saveToLS = (newTodos) => {
+        localStorage.setItem("todos", JSON.stringify(newTodos));
+      };
+
+      // --- Add a new todo ---
+      const handleAdd = () => {
+        // Create a new todo object.
+        // We use Date.now().toString() as a simple unique id in this demo.
+        const newTodoObject = {
+          id: Date.now().toString(), // unique-ish ID (sufficient for a demo)
+          todo: todo,                 // the text from the input
+          isCompleted: false         // default to not completed
+        };
+
+        // Create a new array with the new todo appended.
+        const newTodos = [...todos, newTodoObject];
+
+        // Update state with the new array.
+        setTodos(newTodos);
+
+        // Clear the input field.
+        setTodo("");
+
+        // Save updated list into localStorage.
+        saveToLS(newTodos);
+
+        // Refocus input for quick next entry (if ref exists).
+        if (inputRef.current) inputRef.current.focus();
+      };
+
+      // --- Edit an existing todo ---
+      const handleEdit = (id) => {
+        // Find the todo object that matches the id.
+        const found = todos.find((t) => t.id === id);
+        if (!found) return; // guard: if not found, do nothing.
+
+        // Place the todo text into the input so user can update it.
+        setTodo(found.todo);
+
+        // Remove the original item from the list (we'll re-add the updated one when user saves).
+        const newTodos = todos.filter((t) => t.id !== id);
+        setTodos(newTodos);
+        saveToLS(newTodos);
+
+        // Focus input for user convenience.
+        if (inputRef.current) inputRef.current.focus();
+      };
+
+      // --- Delete a single todo by id ---
+      const handleDelete = (id) => {
+        // Keep every item except the one with matching id.
+        const newTodos = todos.filter((t) => t.id !== id);
+        setTodos(newTodos);
+        saveToLS(newTodos);
+      };
+
+      // --- Delete all todos ---
+      const handleDeleteAll = () => {
+        // Empty array in state and storage
+        setTodos([]);
+        saveToLS([]);
+      };
+
+      // --- Toggle the completed status of a todo ---
+      const handleCheckbox = (id) => {
+        // Map over todos and flip isCompleted for the matched item.
+        const newTodos = todos.map((t) =>
+          t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
+        );
+        setTodos(newTodos);
+        saveToLS(newTodos);
+      };
+
+      // --- Toggle whether finished/completed todos are visible ---
+      const toggleFinished = () => setShowFinished(!showFinished);
+
+      // --- Generate and download a PDF of todos ---
+      const handleDownloadPDF = () => {
+        // Create a new PDF document.
+        const doc = new jsPDF();
+
+        // Add a title at coordinates (x=14, y=16).
+        doc.text("Your Todos", 14, 16);
+
+        // Table column headers
+        const tableColumn = ["#", "Todo", "Completed"];
+        // Rows array for the table body
+        const tableRows = [];
+
+        // Build table rows from todos
+        todos.forEach((item, idx) => {
+          tableRows.push([idx + 1, item.todo, item.isCompleted ? "Yes" : "No"]);
+        });
+
+        // Use the autoTable plugin to render a table inside the PDF.
+        // The plugin attaches as `autoTable` on the doc instance (UMD plugin injection).
+        // startY places the table below the title.
+        doc.autoTable({
+          head: [tableColumn],
+          body: tableRows,
+          startY: 20,
+        });
+
+        // Save the file (this triggers a browser download).
+        doc.save("todos.pdf");
+      };
+
+      // ===== JSX: what the UI renders =====
+      return (
+        <>
+          {/* Fixed Navbar at top of the page */}
+          <Navbar />
+
+          {/* Main container:
+              - mt-20 ensures content starts below the fixed navbar (navbar height + margin).
+              - md:w-[60%] restricts width on medium+ screens.
+              - shadow-lg gives a card-like elevated look.
+              - min-h ensures reasonable height for the demo.
+          */}
+          <div className="mx-3 md:container md:mx-auto mt-20 rounded-xl p-6 bg-violet-100 min-h-[80vh] md:w-[60%] shadow-lg">
+            {/* App Title */}
+            <h1 className="font-bold text-center text-3xl text-violet-900 mb-6">
+              iTask - Manage your todos at one place
+            </h1>
+
+            {/* ----------------- Add Todo Section ----------------- */}
+            <div className="addTodo my-5 flex flex-col gap-4">
+              {/* Section title */}
+              <h2 className="text-2xl font-bold text-gray-800">Add a Todo</h2>
+
+              {/* Input row: text input + Save button */}
+              <div className="flex">
+                {/* Input element:
+                    - controlled component: value = todo, onChange updates state
+                    - placeholder for hint text
+                    - ref so we can focus it programmatically after actions
+                    - onKeyDown listens for Enter to call handleAdd
+                */}
+                <input
+                  ref={inputRef}                       /* reference to DOM node */
+                  onChange={(e) => setTodo(e.target.value)} /* update todo state as user types */
+                  value={todo}                          /* controlled input value */
+                  type="text"
+                  placeholder="Write your task..."
+                  className="w-full rounded-full px-5 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-600"
+                  onKeyDown={(e) => {
+                    // If user presses Enter and input is not empty, add the todo
+                    if (e.key === "Enter" && todo.length > 0) {
+                      handleAdd();
+                    }
+                  }}
+                />
+
+                {/* Save button:
+                    - disabled when input is empty (todo.length <= 0)
+                    - clicking calls handleAdd
+                */}
+                <button
+                  onClick={handleAdd}
+                  disabled={todo.length <= 0}
+                  className="bg-violet-700 mx-2 rounded-full hover:bg-violet-900 disabled:bg-gray-400 px-6 py-2 text-sm font-bold text-white shadow"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {/* ----------------- Action Buttons Row ----------------- */}
+            <div className="flex flex-wrap justify-center items-center gap-4 my-6">
+              {/* Delete all todos:
+                  - disabled if no todos exist (todos.length === 0)
+                  - clicking clears state & localStorage
+              */}
+              <button
+                onClick={handleDeleteAll}
+                disabled={todos.length === 0}
+                className="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-5 rounded-full disabled:bg-gray-400 shadow"
+              >
+                Delete All Todos
+              </button>
+
+              {/* Download PDF:
+                  - disabled if no todos
+                  - calls the PDF generation function
+              */}
+              <button
+                onClick={handleDownloadPDF}
+                disabled={todos.length === 0}
+                className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-5 rounded-full disabled:bg-gray-400 shadow"
+              >
+                Download as PDF
+              </button>
+
+              {/* Show Finished toggle:
+                  - checkbox bound to showFinished state
+              */}
+              <div className="flex items-center">
+                <input
+                  id="show"
+                  onChange={toggleFinished}
+                  type="checkbox"
+                  checked={showFinished}
+                  className="w-5 h-5 accent-violet-700"
+                />
+                <label className="ml-2 text-gray-700 font-medium" htmlFor="show">
+                  Show Finished
+                </label>
+              </div>
+            </div>
+
+            {/* Horizontal divider */}
+            <div className="h-[1px] bg-black opacity-15 w-[90%] mx-auto my-4"></div>
+
+            {/* Todos heading */}
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Todos</h2>
+
+            {/* ----------------- Todo List ----------------- */}
+            <div className="todos mt-4">
+              {/* If there are no todos, show an informative message */}
+              {todos.length === 0 && (
+                <div className="m-5 text-gray-600 italic">No Todos to display</div>
+              )}
+
+              {/* Map over todos and render each as a card.
+                  Condition `(showFinished || !item.isCompleted)` ensures:
+                  - If showFinished is true => show every item
+                  - If false => hide items where isCompleted === true
+              */}
+              {todos.map((item) =>
+                (showFinished || !item.isCompleted) && (
+                  // Card container for one todo item
+                  <div
+                    key={item.id}
+                    className={
+                      `todo flex justify-between items-center p-4 mb-3 rounded-xl shadow-md transition-all ` +
+                      (item.isCompleted ? "bg-green-100" : "bg-white")
+                    }
+                  >
+                    {/* LEFT: checkbox + todo text */}
+                    <div className="flex items-center gap-3">
+                      {/* Checkbox:
+                          - checked is bound to item.isCompleted
+                          - onChange toggles completion status
+                      */}
+                      <input
+                        type="checkbox"
+                        checked={item.isCompleted}
+                        onChange={() => handleCheckbox(item.id)}
+                        className="w-5 h-5 accent-violet-700 cursor-pointer"
+                      />
+
+                      {/* Todo text:
+                          - larger font (text-lg)
+                          - if completed: line-through and muted color
+                      */}
+                      <div
+                        className={
+                          "text-lg " +
+                          (item.isCompleted ? "line-through text-gray-500" : "text-gray-800")
+                        }
+                      >
+                        {item.todo}
+                      </div>
+                    </div>
+
+                    {/* RIGHT: action buttons (Edit, Delete) */}
+                    <div className="flex gap-2">
+                      {/* Edit:
+                          - When clicked, moves the todo text into the input for editing,
+                            removes the old item from the list so saving re-adds it as new (updated)
+                      */}
+                      <button
+                        onClick={() => handleEdit(item.id)}
+                        className="bg-violet-700 hover:bg-violet-900 px-3 py-1 rounded-lg text-white text-sm font-semibold shadow"
+                      >
+                        ✏️ Edit
+                      </button>
+
+                      {/* Delete:
+                          - removes the single item from list & storage
+                      */}
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="bg-red-600 hover:bg-red-800 px-3 py-1 rounded-lg text-white text-sm font-semibold shadow"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    // ===== Mount the App into the root div =====
+    // Create a React root and render the App component.
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    margin: 70px 0px 70px 0px;
+}
+
+.body {
+    height: 38rem;
+    width: 20rem;
+    border: 2px solid black;
+    border-radius: 38px;
+}
+
+.body i {
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.897);
+}
+
+.main {
+    /* background-image: url("o0CrJEMIDeksUCS2QEfwDxAAgF73AmB1a1vtIt~tplv-tej9nj120t-origin.webp"); */
+    background-image: url("https://p16-va.lemon8cdn.com/tos-maliva-v-ac5634-us/o0CrJEMIDeksUCS2QEfwDxAAgF73AmB1a1vtIt~tplv-tej9nj120t-origin.webp");
+    background-position: 99rem -8rem;
+    background-size: max(32rem, 34vw);
+    height: 38rem;
+    border-radius: 37px;
+}
+
+
+.time {
+    display: flex;
+    padding-top: 18px;
+}
+
+.time nav {
+    height: 19px;
+    width: 20px;
+    border-radius: 10px;
+    margin-left: 20px;
+    background-color: rgba(113, 96, 96, 0.351);
+    box-shadow: 0px 0px 0px 3px black;
+}
+
+.nav2{
+    height: 13px;
+    width: 13px;
+    border-radius: 30px;
+    background-color: black;
+    position: relative;
+    top: 3px;
+    right: 16px;
+}
+
+.time span {
+    padding: 0px 75px 0px 5px;
+}
+
+.time .fa-youtube {
+    margin-left: 0px;
+}
+
+.google {
+    display: flex;
+    margin-top: 35px;
+    justify-content: center;
+    align-items: center;
+}
+
+.gl {
+    height: 38px;
+    width: 18rem;
+    background-color: rgba(50, 31, 31, 0.934);
+    border-radius: 40px;
+}
+
+.gl i {
+    padding: 11px 0px 0px 12px;
+}
+
+.gl span {
+    padding-left: 186px;
+}
+
+
+.time2 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 70px;
+    margin-top: 53px;
+}
+
+.time2 span {
+    padding: 0px 0px 0px 0px;
+    font-size: 45px;
+    color: rgba(255, 255, 255, 0.897);
+}
+
+.deg {
+    font-size: 18px;
+    color: white;
+}
+
+.time2 p {
+    padding-left: 40px;
+    color: rgba(255, 255, 255, 0.897);
+}
+
+.apps1 {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    font-size: 31px;
+    margin-top: 107px;
+}
+
+.apps1 .fa-google,
+.apps1 .fa-google-play,
+.apps1 .fa-gear {
+    height: 40px;
+    width: 40px;
+    border: 1px solid white;
+    color: rgb(33 21 208 / 78%);
+    border-radius: 15px;
+    background-color: white;
+}
+
+.apps1 .fa-youtube {
+    padding: 10px 9px 0px 9px;
+    height: 40px;
+    width: 35px;
+    border: 1px solid white;
+    color:red;
+    border-radius: 15px;
+    background-color: white;
+
+}
+
+.not{
+    height: 15px;
+    width: 15px;
+    background-color: red;
+    border-radius: 50%;
+    position: relative;
+    bottom: 55px;
+    left: 137px;
+}
+.apps1 .fa-google,
+.fa-google-play,
+.fa-gear {
+    padding-left: 10px;
+    padding-top: 10px;
+}
+.apps1 .fa-google{
+    color: #28a1a9;;
+}
+
+.apps1 .fa-google-play{
+    color: #10e710;
+}
+
+.apps1 .fa-gear{
+    color: black;
+}
+
+.name {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    color: white;
+    margin-top: 3px;
+    margin-left: 5px;
+}
+
+.name p:first-child{
+    margin-left: 4px;
+    margin-top: -3px;
+}
+.name p:nth-child(2){
+    margin-left: 10px;
+}
+
+.apps2 {
+    display: flex;
+    gap: 22px;
+    margin-left: 22px;
+    align-items: center;
+    font-size: 31px;
+    margin-top: 10px;
+}
+
+.apps2 .fa-image,
+.apps2 .fa-address-book,
+.apps2 .fa-location-dot {
+    height: 40px;
+    width: 40px;
+    border: 1px solid white;
+    color: rgb(33 21 208 / 78%);
+    border-radius: 15px;
+    background-color: white;
+}
+
+.apps2 .fa-image,
+.fa-address-book,
+.fa-location-dot {
+    padding-left: 10px;
+    padding-top: 10px;
+}
+
+.apps2 .fa-location-dot{
+    padding: 10px 9px 0px 9px;
+    display: flex;
+    justify-content: center;
+    height: 40px;
+    width: 35px;
+    border: 1px solid white;
+    color: rgb(33 21 208 / 78%);
+    border-radius: 15px;
+    background-color: white;
+}
+
+.apps2 .fa-image{
+    color: blue;
+}
+
+.apps2 .fa-address-book{
+color: blue;
+}
+
+.apps2 .fa-location-dot{
+    color: #ffd300;
+}
+
+.name2{
+    display: flex;
+    align-items: center;
+    color: white;
+    margin-top: 3px;
+    margin-left: 27px;
+    gap: 26px;
+}
+
+.search {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 25px;
+    width: 120px;
+    color: white;
+    border-radius: 150px;
+    margin-left: 6rem;
+    background-color: rgb(206 201 201 / 53%);
+    cursor: pointer;
+}
+
+.search i {
+    padding: 0px 5px 0px 0px;
+}
+
+.apps3 {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    font-size: 31px;
+    margin-top: 23px;
+}
+
+.apps3 .fa-phone,
+.apps3 .fa-comment,
+.fa-chrome,
+.fa-camera {
+    height: 40px;
+    width: 40px;
+    border: 1px solid white;
+    color: rgb(33 21 208 / 78%);
+    border-radius: 15px;
+    background-color: white;
+}
+
+.fa-phone,
+.fa-comment,
+.fa-chrome,
+.fa-camera {
+    padding-left: 10px;
+    padding-top: 10px;
+}
+
+.apps3 .fa-camera {
+    background-color: #d6d7ce;
+    color: black;
+}
